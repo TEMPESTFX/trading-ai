@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Trader IA | Forex Trading</title>
+    <meta name="description" content="Intelligence Artificielle de trading automatisé — Forex Exness MT5 Demo. Analyse multi-timeframe, apprentissage automatique.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #060810;
+            --bg-surface: rgba(14, 16, 26, 0.85);
+            --bg-card: rgba(20, 22, 36, 0.6);
+            --border-glow: rgba(0, 240, 255, 0.18);
+            --border-subtle: rgba(255, 255, 255, 0.07);
+            --color-primary: #00f0ff;
+            --color-secondary: #a855f7;
+            --color-success: #00f5a0;
+            --color-danger: #ff3366;
+            --color-warning: #fbbf24;
+            --text-main: #f0f2f8;
+            --text-muted: #8b95b0;
+            --sidebar-w: 270px;
+            --ai-w: 320px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; scrollbar-width: thin; scrollbar-color: var(--border-glow) transparent; }
+        body { background-color: var(--bg-base); color: var(--text-main); min-height: 100vh; overflow-x: hidden; background-image: radial-gradient(ellipse at 5% 10%, rgba(168,85,247,0.07) 0%, transparent 50%), radial-gradient(ellipse at 95% 90%, rgba(0,240,255,0.07) 0%, transparent 50%); background-attachment: fixed; }
+
+        /* ── HEADER ─────────────────────────────────────────────── */
+        header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 2rem; border-bottom: 1px solid var(--border-subtle);
+            backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 200;
+            background: rgba(6, 8, 16, 0.85);
+        }
+        .logo { display: flex; align-items: center; gap: 0.75rem; }
+        .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(0,240,255,0.35); }
+        .logo-icon svg { color: #000; }
+        .logo-title { font-size: 1.15rem; font-weight: 800; letter-spacing: 1.5px; background: linear-gradient(135deg, #fff 0%, var(--color-primary) 55%, var(--color-secondary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .logo-sub { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-top: -2px; }
+
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .badge { padding: 0.3rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; border: 1px solid transparent; }
+        .badge-sim { background: rgba(0,240,255,0.08); color: var(--color-primary); border-color: rgba(0,240,255,0.2); }
+        .badge-live { background: rgba(0,245,160,0.08); color: var(--color-success); border-color: rgba(0,245,160,0.2); box-shadow: 0 0 12px rgba(0,245,160,0.15); }
+        .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 1.4s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.4; transform: scale(0.85); } to { opacity: 1; transform: scale(1.2); } }
+
+        /* ── LAYOUT ─────────────────────────────────────────────── */
+        .layout {
+            display: grid;
+            grid-template-columns: var(--sidebar-w) 1fr var(--ai-w);
+            gap: 1.25rem;
+            padding: 1.25rem 1.5rem;
+            max-width: 1920px;
+            margin: 0 auto;
+            min-height: calc(100vh - 65px);
+        }
+        @media (max-width: 1300px) { .layout { grid-template-columns: 1fr; } .ai-sidebar { display: none; } }
+
+        /* ── PANEL ─────────────────────────────────────────────── */
+        .panel { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 1.25rem; backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(0,0,0,0.4); transition: border-color 0.3s; }
+        .panel:hover { border-color: var(--border-glow); }
+        .panel-title { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .panel-title svg { color: var(--color-primary); }
+
+        /* ── SIDEBAR GAUCHE ─────────────────────────────────────── */
+        .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+        .input-group { margin-bottom: 0.85rem; }
+        .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem; letter-spacing: 0.3px; }
+        .input-group input, .input-group select { width: 100%; background: rgba(6,8,16,0.9); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.55rem 0.8rem; color: var(--text-main); font-size: 0.88rem; transition: all 0.2s; }
+        .input-group input:focus, .input-group select:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(0,240,255,0.1); }
+        .input-group select option { background: #0e1018; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; width: 100%; padding: 0.7rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-size: 0.88rem; }
+        .btn-primary { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #000; box-shadow: 0 4px 18px rgba(0,240,255,0.2); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,240,255,0.35); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-danger { background: rgba(255,51,102,0.12); color: var(--color-danger); border: 1px solid rgba(255,51,102,0.25); }
+        .btn-danger:hover { background: rgba(255,51,102,0.2); }
+
+        /* Indicateur de stratégie */
+        .strategy-badge { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500; margin-bottom: 0.4rem; }
+        .strategy-badge.active { background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.15); color: var(--color-primary); }
+        .strategy-badge svg { width: 13px; height: 13px; }
+
+        /* ── CENTRE ─────────────────────────────────────────────── */
+        .main-content { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem; }
+        @media (max-width: 900px) { .stats-row { grid-template-columns: 1fr 1fr; } }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1rem 1.1rem; position: relative; overflow: hidden; }
+        .stat-card::after { content: ''; position: absolute; inset: 0; border-radius: 12px; background: radial-gradient(circle at top left, rgba(255,255,255,0.03), transparent); pointer-events: none; }
+        .stat-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
+        .accent-cyan .stat-accent { background: var(--color-primary); box-shadow: 0 0 8px var(--color-primary); }
+        .accent-green .stat-accent { background: var(--color-success); box-shadow: 0 0 8px var(--color-success); }
+        .accent-yellow .stat-accent { background: var(--color-warning); box-shadow: 0 0 8px var(--color-warning); }
+        .accent-red .stat-accent { background: var(--color-danger); box-shadow: 0 0 8px var(--color-danger); }
+        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 0.35rem; }
+        .stat-value { font-size: 1.55rem; font-weight: 800; line-height: 1; }
+        .stat-sub { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+        /* Graphique */
+        .chart-panel { flex: 1; }
+        .chart-controls { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .control-group { display: flex; flex-direction: column; gap: 0.4rem; flex: 1; min-width: 150px; }
+        .control-group label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .control-group select { background: rgba(6,8,16,0.9); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.4rem 0.6rem; color: var(--text-main); font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .control-group select:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(0,240,255,0.1); }
+        .chart-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem; }
+        .symbol-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .symbol-tab { padding: 0.35rem 0.8rem; border-radius: 7px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); font-size: 0.8rem; cursor: pointer; transition: all 0.2s; color: var(--text-muted); font-family: 'Outfit', sans-serif; font-weight: 500; }
+        .symbol-tab:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
+        .symbol-tab.active { background: rgba(0,240,255,0.1); border-color: rgba(0,240,255,0.3); color: var(--color-primary); }
+        .price-ticker { font-size: 1.1rem; font-weight: 700; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+        .price-change { font-size: 0.75rem; margin-left: 0.4rem; }
+        .price-change.up { color: var(--color-success); }
+        .price-change.down { color: var(--color-danger); }
+
+        /* Chart container — hauteur fixe pour éviter clientWidth=0 */
+        #tv-chart {
+            width: 100%;
+            height: 400px;
+            background: rgba(6,8,16,0.6);
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+            position: relative;
+        }
+
+        /* Tables */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        th { color: var(--text-muted); font-weight: 500; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border-subtle); white-space: nowrap; text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; }
+        td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); font-variant-numeric: tabular-nums; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        .empty-row td { text-align: center; color: var(--text-muted); padding: 1.5rem; font-style: italic; }
+        .txt-buy { color: var(--color-success); font-weight: 600; }
+        .txt-sell { color: var(--color-danger); font-weight: 600; }
+        .profit-pos { color: var(--color-success); font-weight: 700; }
+        .profit-neg { color: var(--color-danger); font-weight: 700; }
+        .badge-gain { background: rgba(0,245,160,0.1); color: var(--color-success); border: 1px solid rgba(0,245,160,0.25); padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+        .badge-perte { background: rgba(255,51,102,0.1); color: var(--color-danger); border: 1px solid rgba(255,51,102,0.25); padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+        code { font-size: 0.7rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.1rem 0.35rem; border-radius: 4px; }
+
+        /* ── SIDEBAR DROITE ─────────────────────────────────────── */
+        .ai-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+        .brain-orb { width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(168,85,247,0.5), rgba(168,85,247,0.1)); border: 1px solid rgba(168,85,247,0.3); display: flex; align-items: center; justify-content: center; color: var(--color-secondary); animation: breathe 3.5s ease-in-out infinite alternate; box-shadow: 0 0 20px rgba(168,85,247,0.2); flex-shrink: 0; }
+        @keyframes breathe { from { box-shadow: 0 0 8px rgba(168,85,247,0.2); } to { box-shadow: 0 0 28px rgba(168,85,247,0.55); } }
+
+        .ai-header-row { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1rem; }
+        .ai-title { font-size: 1rem; font-weight: 700; }
+        .ai-subtitle { font-size: 0.72rem; color: var(--color-secondary); }
+
+        .insight-list { display: flex; flex-direction: column; gap: 0.6rem; max-height: 380px; overflow-y: auto; }
+        .insight-item { background: rgba(168,85,247,0.04); border: 1px solid rgba(168,85,247,0.1); border-radius: 8px; padding: 0.65rem 0.8rem; font-size: 0.8rem; line-height: 1.45; display: flex; gap: 0.5rem; align-items: flex-start; }
+        .insight-item svg { flex-shrink: 0; color: var(--color-secondary); margin-top: 2px; }
+
+        .ai-notification { border-left: 3px solid var(--color-danger); background: rgba(255,51,102,0.06); padding: 0.6rem 0.85rem; border-radius: 6px; font-size: 0.78rem; margin-top: 0.75rem; animation: slideIn 0.4s ease; }
+        .ai-notification.win { border-left-color: var(--color-success); background: rgba(0,245,160,0.06); }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Progress bar win rate */
+        .progress-track { height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; margin-top: 0.5rem; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); transition: width 0.8s ease; }
+
+        /* Scroll custom */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.2); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+    <div class="logo">
+        <div class="logo-icon">
+            <i data-lucide="cpu" style="width:20px;height:20px;"></i>
+        </div>
+        <div>
+            <div class="logo-title">NEURAL TRADER IA</div>
+            <div class="logo-sub">Forex · Exness MT5 Demo</div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div id="connection-badge" class="badge badge-sim">
+            <span class="pulse-dot"></span>
+            <div style="display:flex;flex-direction:column;align-items:flex-start; gap:0.15rem;">
+                <span id="connection-text">Simulation Active</span>
+                <span id="connection-detail" style="font-size:0.72rem;color:var(--text-muted);">Statut de connexion MT5 inconnu</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ── LAYOUT ── -->
+<div class="layout">
+
+    <!-- ── SIDEBAR GAUCHE ── -->
+    <aside class="sidebar">
+
+        <!-- Licence Premium -->
+        <div class="panel" style="border-color: rgba(168, 85, 247, 0.4); background: rgba(20, 10, 36, 0.45);">
+            <div class="panel-title" style="color: var(--color-secondary);"><i data-lucide="shield-check"></i> Licence Commerciale</div>
+            <div class="input-group" style="margin-bottom:0.6rem;">
+                <label id="license-status-label" style="font-weight:600;">Statut : Version Gratuite (Simulation)</label>
+                <input type="text" id="license-key-input" placeholder="Clé de licence (Ex: NT-PRO-...)">
+            </div>
+            <button class="btn" id="activate-license-btn" onclick="activateLicense()" style="background: linear-gradient(135deg, var(--color-secondary), #d946ef); color:#fff; padding:0.5rem;">
+                Activer Premium
+            </button>
+        </div>
+
+        <!-- Configuration -->
+        <div class="panel">
+            <div class="panel-title"><i data-lucide="settings-2"></i> Configuration</div>
+
+            <div class="input-group">
+                <label for="broker-select">Broker</label>
+                <select id="broker-select" onchange="updateBrokerSelection()">
+                    <option value="Simulation">Simulation interne</option>
+                    <option value="Exness MT5">Exness MT5 (Réel/Démo)</option>
+                    <option value="Deriv MT5">Deriv MT5 (Indices Synthétiques)</option>
+                    <option value="Weltrade MT5">Weltrade MT5 (Réel/Démo)</option>
+                </select>
+            </div>
+
+
+            <div class="input-group">
+                <label for="market-select">Marché</label>
+                <select id="market-select" onchange="updateMarketSelection()"></select>
+            </div>
+
+            <div class="input-group" id="mt5-panel" style="display:none;">
+                <label for="mt5-account-id">MT5 Account ID</label>
+                <input type="text" id="mt5-account-id" placeholder="Ex: 1234567">
+            </div>
+            <div class="input-group" id="mt5-password-panel" style="display:none;">
+                <label for="mt5-password">MT5 Password</label>
+                <input type="password" id="mt5-password" placeholder="••••••••••••••••">
+            </div>
+            <div class="input-group" id="mt5-server-panel" style="display:none;">
+                <label for="mt5-server">MT5 Server</label>
+                <input type="text" id="mt5-server" placeholder="Ex: Exness-Demo" value="Exness-Demo">
+            </div>
+            <div class="input-group" id="mt5-connect-group" style="display:none;">
+                <button class="btn btn-primary" id="mt5-connect-btn" onclick="connectMT5()">
+                    <i data-lucide="link"></i> Configurer Connexion MT5
+                </button>
+            </div>
+
+            <div class="input-group">
+                <label for="target-gain">Gain cible par trade ($)</label>
+                <input type="number" id="target-gain" value="0.50" step="0.10" min="0.10" onchange="updateTargets()">
+            </div>
+
+            <div class="input-group">
+                <label for="max-loss">Stop Loss max ($)</label>
+                <input type="number" id="max-loss" value="0.75" step="0.10" min="0.10" onchange="updateTargets()">
+            </div>
+
+            <div class="input-group">
+                <button class="btn btn-primary" id="start-ai-btn" onclick="toggleBotRunning(true)">Démarrer l'IA</button>
+                <button class="btn btn-danger" id="stop-ai-btn" onclick="toggleBotRunning(false)" style="margin-top:0.5rem; display:none;">Arrêter l'IA</button>
+            </div>
+        </div>
+
+        <div class="panel" id="mt5-info-panel" style="display:none;">
+            <div class="panel-title"><i data-lucide="info"></i> Liaison MetaTrader 5</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.6;">
+                <p>1. Obtenez vos accès MT5 réels ou démo auprès de votre courtier (Exness, Deriv ou Weltrade).</p>
+                <p>2. Entrez votre identifiant, mot de passe et serveur exact (ex: <i>Deriv-Demo</i>, <i>Exness-MT5-Trial</i>).</p>
+                <p>3. Ouvrez l'application MetaTrader 5 sur ce PC Windows.</p>
+                <p id="mt5-connection-health" style="margin-top:0.75rem;color:var(--color-primary);font-weight:600;">Statut MT5 : en attente</p>
+            </div>
+        </div>
+
+
+        <!-- Stratégies actives -->
+        <div class="panel" style="display:none;">
+            <div class="panel-title"><i data-lucide="git-branch"></i> Stratégies Actives</div>
+
+            <div class="strategy-badge active">
+                <i data-lucide="trending-up"></i> Multi-Timeframe (1D → 5M)
+            </div>
+            <div class="strategy-badge active">
+                <i data-lucide="bar-chart-2"></i> BoS + Retest (Structure)
+            </div>
+            <div class="strategy-badge active">
+                <i data-lucide="git-merge"></i> Fibonacci 0.5 / 0.618
+            </div>
+            <div class="strategy-badge active">
+                <i data-lucide="layers"></i> Double Top / Bottom
+            </div>
+
+            <div style="margin-top:0.85rem; font-size:0.75rem; color:var(--text-muted); line-height:1.5;">
+                <strong style="color:var(--text-main);">Mode apprentissage :</strong> l'IA laisse tous les setups passer pour apprendre en continu.
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ── CONTENU CENTRAL ── -->
+    <main class="main-content">
+
+        <!-- Stats rapides -->
+        <div class="stats-row">
+            <div class="stat-card accent-cyan">
+                <div class="stat-accent"></div>
+                <div style="padding-left:0.6rem;">
+                    <div class="stat-label">Solde Simulé</div>
+                    <div class="stat-value" id="stat-balance">1000.00 $</div>
+                    <div class="stat-sub">Capital de départ : 1 000 $</div>
+                </div>
+            </div>
+            <div class="stat-card accent-green">
+                <div class="stat-accent"></div>
+                <div style="padding-left:0.6rem;">
+                    <div class="stat-label">Profit Total</div>
+                    <div class="stat-value" id="stat-profit">+0.00 $</div>
+                    <div class="stat-sub" id="stat-trades-info">0 trades fermés</div>
+                </div>
+            </div>
+            <div class="stat-card accent-yellow">
+                <div class="stat-accent"></div>
+                <div style="padding-left:0.6rem;">
+                    <div class="stat-label">Win Rate</div>
+                    <div class="stat-value" id="stat-winrate">0%</div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="winrate-bar" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card accent-red">
+                <div class="stat-accent"></div>
+                <div style="padding-left:0.6rem;">
+                    <div class="stat-label">Trades Bloqués IA</div>
+                    <div class="stat-value" id="stat-blocked">0</div>
+                    <div class="stat-sub">Risques évités</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique -->
+        <div class="panel chart-panel">
+            <!-- Contrôles de timeframe et marché -->
+            <div class="chart-controls">
+                <div class="control-group">
+                    <label for="timeframe-select">📊 Timeframe</label>
+                    <select id="timeframe-select" onchange="updateTimeframe()">
+                        <option value="1m">1 min</option>
+                        <option value="5m">5 min</option>
+                        <option value="15m">15 min</option>
+                        <option value="30m">30 min</option>
+                        <option value="1h">1 h</option>
+                        <option value="2h">2 h</option>
+                        <option value="4h">4 h</option>
+                        <option value="1d" selected>24 h</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="chart-market-select">💱 Marché Forex</label>
+                    <select id="chart-market-select" onchange="updateChartMarket()">
+                        <option value="EURUSD">EUR/USD - Euro</option>
+                        <option value="GBPUSD">GBP/USD - Livre</option>
+                        <option value="USDJPY">USD/JPY - Yen</option>
+                        <option value="AUDUSD">AUD/USD - Dollar Australien</option>
+                        <option value="NZDUSD">NZD/USD - Dollar Néo-Zélandais</option>
+                        <option value="XAUUSD">XAU/USD - Or</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Info prix -->
+            <div class="chart-topbar">
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span id="current-symbol" style="font-size:0.9rem;font-weight:600;">EUR/USD</span>
+                    <span id="transport-indicator" class="transport-indicator connecting">Live : connexion...</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span class="price-ticker" id="current-price">—</span>
+                    <span class="price-change" id="price-change"></span>
+                </div>
+            </div>
+
+            <!-- Graphique TradingView -->
+            <div id="tv-chart"></div>
+        </div>
+
+        <!-- Trades actifs -->
+        <div class="panel">
+            <div class="panel-title"><i data-lucide="activity"></i> Positions Ouvertes <span id="active-count-badge" style="margin-left:0.5rem;background:rgba(0,240,255,0.1);color:var(--color-primary);padding:0.1rem 0.5rem;border-radius:9999px;font-size:0.7rem;"></span></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Actif</th><th>Type</th><th>Lot</th>
+                            <th>Entrée</th><th>SL</th><th>TP</th><th>Stratégie</th>
+                        </tr>
+                    </thead>
+                    <tbody id="active-trades-body">
+                        <tr class="empty-row"><td colspan="8">Aucune position ouverte en ce moment</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Historique trades -->
+        <div class="panel">
+            <div class="panel-title"><i data-lucide="history"></i> Historique des Trades</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Actif</th><th>Type</th><th>Lot</th>
+                            <th>Entrée</th><th>Sortie</th><th>Résultat</th><th>Profit</th><th>Stratégie</th>
+                        </tr>
+                    </thead>
+                    <tbody id="closed-trades-body">
+                        <tr class="empty-row"><td colspan="8">Aucun trade clôturé pour l'instant</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── SIDEBAR DROITE — CERVEAU IA ── -->
+    <aside class="ai-sidebar" style="display:none;">
+        <div class="panel" style="flex:1; display:none;">
+            <div class="ai-header-row">
+                <div class="brain-orb">
+                    <i data-lucide="brain" style="width:26px;height:26px;"></i>
+                </div>
+                <div>
+                    <div class="ai-title">Cerveau de l'IA</div>
+                    <div class="ai-subtitle">Apprentissage en temps réel</div>
+                </div>
+            </div>
+
+            <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.55;margin-bottom:1rem;">
+                Le modèle RandomForest analyse chaque trade fermé, identifie les corrélations cachées 
+                (heure, volatilité ATR, distance supports/résistances) et ajuste ses prédictions pour 
+                bloquer les futurs setups perdants.
+            </p>
+
+            <div class="insight-list" id="ai-insights-container">
+                <div class="insight-item">
+                    <i data-lucide="hourglass" style="width:15px;height:15px;"></i>
+                    <span>En attente de données suffisantes pour générer des insights...</span>
+                </div>
+            </div>
+
+            <div id="ai-notification-area" style="margin-top:0.75rem;"></div>
+        </div>
+
+        <!-- Mini résumé IA -->
+        <div class="panel">
+            <div class="panel-title"><i data-lucide="zap"></i> Dernière Décision IA</div>
+            <div id="last-decision" style="font-size:0.8rem;color:var(--text-muted);line-height:1.5;">
+                En attente du prochain signal...
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<!-- ── SCRIPTS ── -->
+<script>
+// ─── ÉTAT GLOBAL ─────────────────────────────────────────────────────────────
+let activeTimeframe = '1d';
+let activeSymbol = 'EURUSD';
+let currentBroker = 'Simulation';
+let currentMarket = 'EURUSD';
+let botRunning = true;
+let chart = null;
+let candleSeries = null;
+let lastPrice = null;
+let lastClosedCount = 0;
+let latestCandleTime = null;
+let chartInitialized = false;
+let chartSocket = null;
+let chartSocketReconnect = null;
+let sseSource = null;
+let usingWebSocket = false;
+
+const getDecimals = (symbol) => {
+    if (!symbol) return 5;
+    if (symbol === 'XAUUSD' || symbol.includes('Index') || symbol.includes('Vol') || symbol.includes('Boom') || symbol.includes('Crash')) {
+        return 2;
+    }
+    return 5;
+};
+
+
+const brokerMarkets = {
+    Simulation: ["EURUSD", "GBPUSD", "XAUUSD", "Volatility 75 Index", "Boom 500 Index"],
+    "Exness MT5": ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NZDUSD", "XAUUSD"],
+    "Deriv MT5": ["Volatility 75 Index", "Volatility 100 Index", "Boom 500 Index", "Crash 1000 Index"],
+    "Weltrade MT5": ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD"]
+};
+
+const symbolDisplay = {
+    "EURUSD": "EUR/USD",
+    "GBPUSD": "GBP/USD",
+    "USDJPY": "USD/JPY",
+    "AUDUSD": "AUD/USD",
+    "NZDUSD": "NZD/USD",
+    "XAUUSD": "XAU/USD",
+    "Volatility 75 Index": "Volatility 75 Index (Vol 75)",
+    "Volatility 100 Index": "Volatility 100 Index",
+    "Boom 500 Index": "Boom 500 Index (Boom 500)",
+    "Crash 1000 Index": "Crash 1000 Index",
+    "BTCUSD": "BTC/USD"
+};
+
+let hasPremiumLicense = false;
+
+// ─── INITIALISATION ───────────────────────────────────────────────────────────
+const initializePage = async () => {
+    lucide.createIcons();
+    await checkLicenseStatus();
+    initializeBrokerPanel();
+
+    // Initialiser le graphique après que le DOM soit rendu (requestAnimationFrame)
+    // pour s'assurer que clientWidth > 0
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            initChart();
+            const selectedOpt = document.getElementById('timeframe-select').selectedOptions[0];
+            const timeframeLabel = selectedOpt ? selectedOpt.textContent : '24 h';
+            const displaySymbolName = symbolDisplay[activeSymbol] || activeSymbol;
+            document.getElementById('current-symbol').textContent = `${displaySymbolName} · ${timeframeLabel}`;
+            loadChartData(activeSymbol);
+        }, 100);
+    });
+
+    // Démarrer les boucles de mise à jour
+    refreshFastData();
+    refreshSlowData();
+    setInterval(refreshFastData, 1000);                    // Mise à jour chaque seconde pour données rapides
+    setInterval(refreshSlowData, 5000);                    // Mise à jour lente chaque 5 secondes
+    connectChartTransport();
+};
+
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+} else {
+    initializePage();
+}
+
+// ─── GRAPHIQUE TRADINGVIEW ────────────────────────────────────────────────────
+function initChart() {
+    const el = document.getElementById('tv-chart');
+    const w = el.clientWidth || el.offsetWidth || 800;
+    const h = 400;
+
+    chart = LightweightCharts.createChart(el, {
+        width: w,
+        height: h,
+        layout: {
+            background: { type: 'solid', color: 'rgba(6,8,16,0)' },
+            textColor: '#8b95b0',
+            fontSize: 11,
+        },
+        grid: {
+            vertLines: { color: 'rgba(255,255,255,0.03)' },
+            horzLines: { color: 'rgba(255,255,255,0.03)' },
+        },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        rightPriceScale: { borderColor: 'rgba(255,255,255,0.07)' },
+        timeScale: {
+            borderColor: 'rgba(255,255,255,0.07)',
+            timeVisible: true,
+            secondsVisible: false,
+        },
+    });
+
+    candleSeries = chart.addCandlestickSeries({
+        upColor: '#00f5a0',
+        downColor: '#ff3366',
+        borderUpColor: '#00f5a0',
+        borderDownColor: '#ff3366',
+        wickUpColor: '#00f5a0',
+        wickDownColor: '#ff3366',
+    });
+
+    chartInitialized = true;
+
+    // Redimensionnement réactif
+    const ro = new ResizeObserver(entries => {
+        for (const entry of entries) {
+            const newW = entry.contentRect.width;
+            if (chart && newW > 0) chart.resize(newW, h);
+        }
+    });
+    ro.observe(el);
+}
+
+async function loadChartData(symbol) {
+    if (!chartInitialized || !candleSeries) return;
+    try {
+        const res = await fetch(`/api/chart/${symbol}?timeframe=${activeTimeframe}`);
+        const data = await res.json();
+        if (!data || data.length === 0) return;
+
+        const displayName = symbolDisplay[symbol] || symbol;
+        const timeframeLabel = document.getElementById('timeframe-select').selectedOptions[0].textContent;
+        document.getElementById('current-symbol').textContent = `${displayName} · ${timeframeLabel}`;
+
+        // TradingView exige des timestamps UNIX en secondes, triés ASC, sans doublons
+        const sorted = data
+            .filter(c => c.time && c.open && c.high && c.low && c.close)
+            .sort((a, b) => a.time - b.time);
+
+        if (sorted.length === 0) return;
+        candleSeries.setData(sorted);
+        chart.timeScale().fitContent();
+        latestCandleTime = sorted[sorted.length - 1].time;
+
+        // Mise à jour du prix affiché
+        const last = sorted[sorted.length - 1];
+        const prev = sorted.length > 1 ? sorted[sorted.length - 2] : null;
+        updatePriceTicker(last.close, prev ? prev.close : null, symbol);
+        sendChartSubscribe();
+    } catch (e) {
+        console.warn('Erreur graphique:', e);
+    }
+}
+
+function connectChartTransport() {
+    if (chartSocket) {
+        chartSocket.close();
+        chartSocket = null;
+    }
+    if (sseSource) {
+        sseSource.close();
+        sseSource = null;
+    }
+
+    updateTransportIndicator('Live', 'Connexion...', 'connecting');
+
+    if (window.WebSocket) {
+        connectChartWebSocket();
+    } else {
+        connectChartSSE();
+    }
+}
+
+function connectChartWebSocket() {
+    usingWebSocket = true;
+    updateTransportIndicator('WebSocket', 'Connexion WS...', 'connecting');
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    chartSocket = new WebSocket(`${protocol}//${location.host}/ws/chart`);
+
+    chartSocket.addEventListener('open', () => {
+        sendChartSubscribe();
+        updateTransportIndicator('WebSocket', 'WS connectée', 'live-ws');
+        if (chartSocketReconnect) {
+            clearTimeout(chartSocketReconnect);
+            chartSocketReconnect = null;
+        }
+    });
+
+    chartSocket.addEventListener('message', event => {
+        handleLivePayload(JSON.parse(event.data));
+    });
+
+    chartSocket.addEventListener('close', () => {
+        usingWebSocket = false;
+        updateTransportIndicator('WebSocket', 'WS fermée', 'disconnected');
+        if (chartSocketReconnect) return;
+        chartSocketReconnect = setTimeout(connectChartSSE, 1500);
+    });
+
+    chartSocket.addEventListener('error', () => {
+        usingWebSocket = false;
+        updateTransportIndicator('WebSocket', 'Erreur WS', 'disconnected');
+        if (chartSocket) chartSocket.close();
+    });
+}
+
+function connectChartSSE() {
+    usingWebSocket = false;
+    updateTransportIndicator('SSE', 'Connexion SSE...', 'connecting');
+    usingWebSocket = false;
+    if (sseSource) {
+        sseSource.close();
+        sseSource = null;
+    }
+
+    const url = `/sse/updates?symbol=${activeSymbol}&timeframe=${activeTimeframe}`;
+    sseSource = new EventSource(url);
+
+    sseSource.onopen = () => {
+        updateTransportIndicator('SSE', 'SSE connectée', 'live-sse');
+    };
+    sseSource.addEventListener('open', () => {
+        updateTransportIndicator('SSE', 'SSE connectée', 'live-sse');
+    });
+    sseSource.addEventListener('latest_candle', event => handleLivePayload({ type: 'latest_candle', data: JSON.parse(event.data) }));
+    sseSource.addEventListener('status_update', event => handleLivePayload({ type: 'status_update', data: JSON.parse(event.data) }));
+    sseSource.addEventListener('trades_update', event => handleLivePayload({ type: 'trades_update', data: JSON.parse(event.data) }));
+    sseSource.addEventListener('trade_opened', event => handleLivePayload({ type: 'trade_opened', data: JSON.parse(event.data) }));
+
+    sseSource.onerror = () => {
+        updateTransportIndicator('SSE', 'SSE reconnect...', 'connecting');
+        if (sseSource) {
+            sseSource.close();
+            sseSource = null;
+        }
+        setTimeout(connectChartSSE, 2000);
+    };
+}
+
+function sendChartSubscribe() {
+    if (!usingWebSocket || !chartSocket || chartSocket.readyState !== WebSocket.OPEN) return;
+    chartSocket.send(JSON.stringify({
+        action: 'subscribe',
+        symbol: activeSymbol,
+        timeframe: activeTimeframe
+    }));
+}
+
+function updateTransportIndicator(method, label, stateClass) {
+    const el = document.getElementById('transport-indicator');
+    if (!el) return;
+    el.textContent = `${method} : ${label}`;
+    el.className = `transport-indicator ${stateClass}`;
+}
+
+function handleLivePayload(payload) {
+    if (!payload || !payload.type) return;
+
+    if (payload.type === 'latest_candle' && payload.symbol === activeSymbol && payload.timeframe === activeTimeframe) {
+        if (!chartInitialized || !candleSeries) return;
+        const candle = payload.data;
+        if (!candle || !candle.time) return;
+
+        candleSeries.update(candle);
+        latestCandleTime = candle.time;
+        updatePriceTicker(candle.close, null, activeSymbol);
+    }
+
+    if (payload.type === 'status_update' && payload.data) {
+        updateStatusBadge(payload.data);
+    }
+
+    if (payload.type === 'trades_update' && payload.data) {
+        updateTradesDisplay(payload.data);
+    }
+
+    if (payload.type === 'trade_opened' && payload.data) {
+        showTradeOpenedNotification(payload.data);
+    }
+}
+
+function showTradeOpenedNotification(trade) {
+    const area = document.getElementById('ai-notification-area');
+    if (!area) return;
+    area.innerHTML = `
+        <div class="ai-notification win">
+            <strong style="color:var(--color-success)">✅ Trade ouvert</strong><br>
+            ${trade.symbol} ${trade.direction} · Lot ${trade.lot}<br>
+            Entrée ${Number(trade.entry_price).toFixed(getDecimals(trade.symbol))} · SL ${Number(trade.stop_loss).toFixed(getDecimals(trade.symbol))} · TP ${Number(trade.take_profit).toFixed(getDecimals(trade.symbol))}<br>
+            <span style="color:var(--text-muted);font-size:0.72rem">Stratégie : ${trade.strategy}</span>
+        </div>`;
+}
+
+function updateStatusBadge(status) {
+    document.getElementById('stat-balance').textContent = `${status.balance.toFixed(2)} $`;
+    const profitEl = document.getElementById('stat-profit');
+    profitEl.textContent = `${status.total_profit >= 0 ? '+' : ''}${status.total_profit.toFixed(2)} $`;
+    profitEl.className = `stat-value ${status.total_profit >= 0 ? 'profit-pos' : 'profit-neg'}`;
+    document.getElementById('stat-winrate').textContent = `${status.win_rate}%`;
+    document.getElementById('winrate-bar').style.width = `${Math.min(status.win_rate, 100)}%`;
+    document.getElementById('stat-blocked').textContent = status.blocked_trades_count;
+    document.getElementById('stat-trades-info').textContent = `${status.wins}W / ${status.losses}L`;
+
+    const badge = document.getElementById('connection-badge');
+    const badgeText = document.getElementById('connection-text');
+    if (!status.bot_running) {
+        badge.className = 'badge badge-sim';
+        badgeText.textContent = 'IA En Pause';
+    } else if (!status.simulation_mode && status.selected_broker.toLowerCase().includes('exness')) {
+        badge.className = 'badge badge-live';
+        badgeText.textContent = 'Exness MT5 Connecté — Démo';
+    } else {
+        badge.className = 'badge badge-sim';
+        badgeText.textContent = `${status.selected_broker}`;
+    }
+    setBotRunningControls(status.bot_running);
+}
+
+function updateTradesDisplay(tradeData) {
+    if (!tradeData) return;
+    const activeTrades = tradeData.active_trades || [];
+    const closedTrades = tradeData.closed_trades || [];
+    const activeCountEl = document.getElementById('active-trades-count');
+    const closedCountEl = document.getElementById('closed-trades-count');
+    if (activeCountEl) activeCountEl.textContent = activeTrades.length;
+    if (closedCountEl) closedCountEl.textContent = closedTrades.length;
+}
+
+function updatePriceTicker(price, prevPrice, symbol) {
+    const decimals = getDecimals(symbol);
+    document.getElementById('current-price').textContent = price.toFixed(decimals);
+
+    const changeEl = document.getElementById('price-change');
+    if (prevPrice !== null) {
+        const diff = price - prevPrice;
+        const pct = ((diff / prevPrice) * 100).toFixed(3);
+        changeEl.textContent = `${diff >= 0 ? '+' : ''}${pct}%`;
+        changeEl.className = `price-change ${diff >= 0 ? 'up' : 'down'}`;
+    }
+}
+
+function changeSymbol(symbol) {
+    activeSymbol = symbol;
+    latestCandleTime = null;
+    loadChartData(symbol);
+    connectChartTransport();
+}
+
+// ─── SÉLECTION TIMEFRAME ET MARCHÉ ────────────────────────────────────────────
+function updateTimeframe() {
+    activeTimeframe = document.getElementById('timeframe-select').value;
+    latestCandleTime = null;
+    const displayName = symbolDisplay[activeSymbol] || activeSymbol;
+    const timeframeLabel = document.getElementById('timeframe-select').selectedOptions[0].textContent;
+    document.getElementById('current-symbol').textContent = `${displayName} · ${timeframeLabel}`;
+    loadChartData(activeSymbol);
+    connectChartTransport();
+}
+
+function updateChartMarket() {
+    activeSymbol = document.getElementById('chart-market-select').value;
+    latestCandleTime = null;
+    const displayName = symbolDisplay[activeSymbol] || activeSymbol;
+    const timeframeLabel = document.getElementById('timeframe-select').selectedOptions[0].textContent;
+    document.getElementById('current-symbol').textContent = `${displayName} · ${timeframeLabel}`;
+    loadChartData(activeSymbol);
+    connectChartTransport();
+}
+
+// ─── RAFRAÎCHISSEMENT RAPIDE (toutes les 2s) ─────────────────────────────────
+async function refreshFastData() {
+    try {
+        const [statusRes, activeRes] = await Promise.all([
+            fetch('/api/status'),
+            fetch('/api/trades/active')
+        ]);
+        const status = await statusRes.json();
+        const activeTrades = await activeRes.json();
+
+        // Stats
+        document.getElementById('stat-balance').textContent = `${status.balance.toFixed(2)} $`;
+
+        const profitEl = document.getElementById('stat-profit');
+        profitEl.textContent = `${status.total_profit >= 0 ? '+' : ''}${status.total_profit.toFixed(2)} $`;
+        profitEl.className = `stat-value ${status.total_profit >= 0 ? 'profit-pos' : 'profit-neg'}`;
+
+        document.getElementById('stat-winrate').textContent = `${status.win_rate}%`;
+        document.getElementById('winrate-bar').style.width = `${Math.min(status.win_rate, 100)}%`;
+        document.getElementById('stat-blocked').textContent = status.blocked_trades_count;
+        document.getElementById('stat-trades-info').textContent = `${status.wins}W / ${status.losses}L`;
+
+        // Badge connexion et broker
+        const badge = document.getElementById('connection-badge');
+        const badgeText = document.getElementById('connection-text');
+        if (!status.bot_running) {
+            badge.className = 'badge badge-sim';
+            badgeText.textContent = 'IA En Pause';
+        } else if (!status.simulation_mode && status.selected_broker.toLowerCase().includes('exness')) {
+            badge.className = 'badge badge-live';
+            badgeText.textContent = 'Exness MT5 Connecté — Démo';
+        } else {
+            badge.className = 'badge badge-sim';
+            badgeText.textContent = `${status.selected_broker}`;
+        }
+
+        setBotRunningControls(status.bot_running);
+
+        const connectionDetail = document.getElementById('connection-detail');
+        const connectionHealth = document.getElementById('mt5-connection-health');
+        if (connectionDetail) {
+            if (status.selected_broker.toLowerCase().includes('exness')) {
+                if (status.mt5_connected) {
+                    connectionDetail.textContent = 'Connexion MT5 active — prêt à trader.';
+                } else {
+                    connectionDetail.textContent = 'MT5 non connecté — veuillez configurer vos identifiants.';
+                }
+            } else {
+                connectionDetail.textContent = 'Mode simulation activé — pas de connexion MT5.';
+            }
+        }
+        if (connectionHealth) {
+            if (status.selected_broker.toLowerCase().includes('exness')) {
+                connectionHealth.textContent = status.mt5_connected ? 'MT5 connecté ✔' : 'MT5 non connecté ✕';
+                connectionHealth.style.color = status.mt5_connected ? 'var(--color-success)' : 'var(--color-danger)';
+            } else {
+                connectionHealth.textContent = 'MT5 non utilisé en mode simulation.';
+                connectionHealth.style.color = 'var(--text-muted)';
+            }
+        }
+
+        // Trades actifs
+        const countBadge = document.getElementById('active-count-badge');
+        countBadge.textContent = activeTrades.length > 0 ? activeTrades.length : '';
+
+        const activeBody = document.getElementById('active-trades-body');
+        if (activeTrades.length === 0) {
+            activeBody.innerHTML = `<tr class="empty-row"><td colspan="8">Aucune position ouverte</td></tr>`;
+        } else {
+            activeBody.innerHTML = activeTrades.map(t => {
+                const dec = getDecimals(t.symbol);
+                return `<tr>
+                    <td><code>${t.trade_id.slice(-8)}</code></td>
+                    <td><strong>${t.symbol}</strong></td>
+                    <td><span class="${t.direction === 'BUY' ? 'txt-buy' : 'txt-sell'}">${t.direction}</span></td>
+                    <td>${t.lot}</td>
+                    <td>${Number(t.entry_price).toFixed(dec)}</td>
+                    <td style="color:var(--color-danger)">${Number(t.stop_loss).toFixed(dec)}</td>
+                    <td style="color:var(--color-success)">${Number(t.take_profit).toFixed(dec)}</td>
+                    <td style="color:var(--color-secondary);font-size:0.75rem">${t.strategy}</td>
+                </tr>`;
+            }).join('');
+        }
+
+    } catch (e) {
+        console.warn('Erreur mise à jour rapide:', e);
+    }
+}
+
+// ─── RAFRAÎCHISSEMENT LENT (toutes les 6s) ───────────────────────────────────
+async function refreshSlowData() {
+    try {
+        const [closedRes, insightsRes] = await Promise.all([
+            fetch('/api/trades/closed'),
+            fetch('/api/insights')
+        ]);
+        const closedTrades = await closedRes.json();
+        const insightsData = await insightsRes.json();
+
+        // Historique
+        const closedBody = document.getElementById('closed-trades-body');
+        if (closedTrades.length === 0) {
+            closedBody.innerHTML = `<tr class="empty-row"><td colspan="8">Aucun trade clôturé pour l'instant</td></tr>`;
+        } else {
+            closedBody.innerHTML = closedTrades.slice(0, 15).map(t => {
+                const dec = getDecimals(t.symbol);
+                const profClass = t.profit >= 0 ? 'profit-pos' : 'profit-neg';
+                return `<tr>
+                    <td><strong>${t.symbol}</strong></td>
+                    <td><span class="${t.direction === 'BUY' ? 'txt-buy' : 'txt-sell'}">${t.direction}</span></td>
+                    <td>${t.lot}</td>
+                    <td>${Number(t.entry_price).toFixed(dec)}</td>
+                    <td>${Number(t.close_price).toFixed(dec)}</td>
+                    <td>${t.outcome === 1 ? '<span class="badge-gain">GAIN</span>' : '<span class="badge-perte">PERTE</span>'}</td>
+                    <td><span class="${profClass}">${t.profit >= 0 ? '+' : ''}${Number(t.profit).toFixed(2)}$</span></td>
+                    <td style="color:var(--color-secondary);font-size:0.73rem">${t.strategy}</td>
+                </tr>`;
+            }).join('');
+
+            // Notification IA quand un nouveau trade se ferme
+            if (closedTrades.length > lastClosedCount && lastClosedCount > 0) {
+                const latest = closedTrades[0];
+                showAINotification(latest);
+                updateLastDecision(latest);
+            }
+            lastClosedCount = closedTrades.length;
+        }
+
+        // Insights
+        const container = document.getElementById('ai-insights-container');
+        if (insightsData.insights && insightsData.insights.length > 0) {
+            container.innerHTML = insightsData.insights.map(ins => `
+                <div class="insight-item">
+                    <i data-lucide="lightbulb" style="width:14px;height:14px;"></i>
+                    <span>${ins}</span>
+                </div>`).join('');
+            lucide.createIcons();
+        }
+
+    } catch (e) {
+        console.warn('Erreur mise à jour lente:', e);
+    }
+}
+
+// ─── NOTIFICATIONS IA ────────────────────────────────────────────────────────
+function showAINotification(trade) {
+    const area = document.getElementById('ai-notification-area');
+    const isWin = trade.outcome === 1;
+    area.innerHTML = `
+        <div class="ai-notification ${isWin ? 'win' : ''}">
+            <strong style="color:${isWin ? 'var(--color-success)' : 'var(--color-danger)'}">
+                ${isWin ? '✅ Trade gagnant' : '📉 Trade perdant'}
+            </strong><br>
+            ${trade.symbol} ${trade.direction} → ${isWin ? 'Gain' : 'Perte'} de ${Number(trade.profit).toFixed(2)}$<br>
+            <span style="color:var(--text-muted);font-size:0.72rem">Résultat enregistré dans les poids du modèle.</span>
+        </div>`;
+}
+
+function updateLastDecision(trade) {
+    document.getElementById('last-decision').innerHTML = `
+        <strong style="color:var(--text-main)">${trade.symbol} ${trade.direction}</strong><br>
+        Stratégie : <span style="color:var(--color-secondary)">${trade.strategy}</span><br>
+        Résultat : <span class="${trade.outcome === 1 ? 'profit-pos' : 'profit-neg'}">${trade.outcome === 1 ? 'GAIN' : 'PERTE'} ${Number(trade.profit).toFixed(2)}$</span>`;
+}
+
+// ─── CONFIGURATION ───────────────────────────────────────────────────────────
+function formatSymbolLabel(symbol) {
+    return symbolDisplay[symbol] || symbol;
+}
+
+function renderSymbolTabs() {
+    const container = document.getElementById('symbol-tabs');
+    if (!container) return;
+    container.innerHTML = brokerMarkets[currentBroker].map(symbol => {
+        return `<button class="symbol-tab${symbol === activeSymbol ? ' active' : ''}" id="tab-${symbol}" onclick="changeSymbol('${symbol}')">${formatSymbolLabel(symbol)}</button>`;
+    }).join('');
+}
+
+function initializeBrokerPanel() {
+    const brokerSelect = document.getElementById('broker-select');
+    const marketSelect = document.getElementById('market-select');
+
+    brokerSelect.value = currentBroker;
+    marketSelect.innerHTML = brokerMarkets[currentBroker].map(m => `<option value="${m}">${formatSymbolLabel(m)}</option>`).join('');
+    currentMarket = marketSelect.value;
+    activeSymbol = currentMarket;
+    renderSymbolTabs();
+    updateBrokerSelection(false);
+}
+// ─── LICENCE ──────────────────────────────────────────────────────────────────
+async function checkLicenseStatus() {
+    try {
+        const res = await fetch('/api/license/status');
+        const data = await res.json();
+        hasPremiumLicense = data.is_valid;
+        
+        const label = document.getElementById('license-status-label');
+        const btn = document.getElementById('activate-license-btn');
+        const keyInput = document.getElementById('license-key-input');
+
+        if (hasPremiumLicense) {
+            label.textContent = "Statut : Licence Premium Activée ✔";
+            label.style.color = "var(--color-success)";
+            if (keyInput) {
+                keyInput.value = data.license_key || "";
+                keyInput.disabled = true;
+            }
+            if (btn) btn.style.display = "none";
+        } else {
+            label.textContent = "Statut : Version Gratuite (Simulation)";
+            label.style.color = "var(--text-muted)";
+            if (keyInput) keyInput.disabled = false;
+            if (btn) btn.style.display = "inline-block";
+        }
+    } catch (e) {
+        console.warn("Impossible de vérifier la licence :", e);
+    }
+}
+
+async function activateLicense() {
+    const keyInput = document.getElementById('license-key-input');
+    const key = keyInput.value.trim();
+    if (!key) {
+        alert("Veuillez saisir une clé de licence.");
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/license/activate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ license_key: key })
+        });
+        const result = await res.json();
+        if (result.status === 'SUCCESS') {
+            alert("✅ Licence Premium activée avec succès !");
+            await checkLicenseStatus();
+            updateBrokerSelection();
+        } else {
+            alert(`❌ Échec : ${result.message}`);
+        }
+    } catch (e) {
+        alert("Erreur de connexion lors de l'activation.");
+    }
+}
+
+function updateBrokerSelection(sendUpdate = true) {
+    const broker = document.getElementById('broker-select').value;
+    currentBroker = broker;
+    const marketSelect = document.getElementById('market-select');
+    const chartMarketSelect = document.getElementById('chart-market-select');
+
+    // Vérifier la licence si l'utilisateur choisit un mode réel MT5
+    if (broker !== 'Simulation' && !hasPremiumLicense) {
+        alert("❌ Clé de licence Premium requise pour utiliser un courtier réel.");
+        document.getElementById('broker-select').value = 'Simulation';
+        updateBrokerSelection(true);
+        return;
+    }
+
+    const markets = brokerMarkets[broker] || brokerMarkets['Simulation'];
+
+    marketSelect.innerHTML = markets.map(m => `<option value="${m}">${formatSymbolLabel(m)}</option>`).join('');
+    currentMarket = marketSelect.value;
+    activeSymbol = currentMarket;
+    renderSymbolTabs();
+
+    // Remplir le selecteur de graphique aussi
+    if (chartMarketSelect) {
+        chartMarketSelect.innerHTML = markets.map(m => `<option value="${m}">${formatSymbolLabel(m)}</option>`).join('');
+        chartMarketSelect.value = activeSymbol;
+    }
+
+    const showingMT5 = broker !== 'Simulation';
+    document.getElementById('mt5-panel').style.display = showingMT5 ? 'block' : 'none';
+    document.getElementById('mt5-password-panel').style.display = showingMT5 ? 'block' : 'none';
+    document.getElementById('mt5-server-panel').style.display = showingMT5 ? 'block' : 'none';
+    document.getElementById('mt5-connect-group').style.display = showingMT5 ? 'block' : 'none';
+    document.getElementById('mt5-info-panel').style.display = showingMT5 ? 'block' : 'none';
+
+    // Remplir le serveur par défaut
+    const serverInput = document.getElementById('mt5-server');
+    if (serverInput) {
+        if (broker === 'Deriv MT5') {
+            serverInput.value = 'Deriv-Demo';
+        } else if (broker === 'Weltrade MT5') {
+            serverInput.value = 'Weltrade-Demo';
+        } else {
+            serverInput.value = 'Exness-Demo';
+        }
+    }
+
+    if (sendUpdate) {
+        fetch('/api/config/broker', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ broker, market: currentMarket })
+        }).catch(console.warn);
+    }
+    loadChartData(activeSymbol);
+}
+
+function updateMarketSelection() {
+    const market = document.getElementById('market-select').value;
+    currentMarket = market;
+    activeSymbol = currentMarket;
+    renderSymbolTabs();
+    fetch('/api/config/broker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ broker: currentBroker, market: currentMarket })
+    }).catch(console.warn);
+    changeSymbol(currentMarket);
+
+    // Synchroniser le selecteur de graphique
+    const chartMarketSelect = document.getElementById('chart-market-select');
+    if (chartMarketSelect) chartMarketSelect.value = currentMarket;
+}
+
+async function toggleBotRunning(start) {
+    botRunning = start;
+    setBotRunningControls(botRunning);
+    await fetch('/api/config/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start: botRunning })
+    }).catch(console.warn);
+}
+
+function setBotRunningControls(active) {
+    const startBtn = document.getElementById('start-ai-btn');
+    const stopBtn = document.getElementById('stop-ai-btn');
+    if (startBtn) startBtn.style.display = active ? 'none' : 'inline-flex';
+    if (stopBtn) stopBtn.style.display = active ? 'inline-flex' : 'none';
+}
+
+async function updateTargets() {
+    const targetGain = parseFloat(document.getElementById('target-gain').value);
+    const maxLoss = parseFloat(document.getElementById('max-loss').value);
+    const broker = document.getElementById('broker-select').value;
+    const simulationMode = broker === 'Simulation';
+
+    await fetch('/api/config/target', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_gain: targetGain, max_loss: maxLoss, simulation_mode: simulationMode })
+    });
+}
+
+async function connectMT5() {
+    const accountId = document.getElementById('mt5-account-id').value.trim();
+    const password = document.getElementById('mt5-password').value.trim();
+    const server = document.getElementById('mt5-server').value.trim();
+
+    if (!accountId || !password || !server) {
+        alert('Veuillez renseigner votre identifiant, mot de passe et serveur MT5.');
+        return;
+    }
+
+    const btn = document.getElementById('mt5-connect-btn');
+    btn.innerHTML = `<span class="pulse-dot"></span> Connexion en cours...`;
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/config/mt5', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account_id: accountId, password: password, server: server })
+        });
+        const result = await res.json();
+
+        if (result.status === 'SUCCESS') {
+            alert(`✅ ${currentBroker} configuré et connecté avec succès !`);
+            document.getElementById('connection-badge').className = 'badge badge-live';
+            document.getElementById('connection-text').textContent = `${currentBroker} Connecté`;
+        } else {
+            const errorText = result.details || result.message || 'Erreur inconnue.';
+            alert(`❌ Échec : ${errorText}`);
+            document.getElementById('broker-select').value = 'Simulation';
+            updateBrokerSelection(true);
+        }
+    } catch (e) {
+        alert('Erreur de communication avec le serveur.');
+    } finally {
+        btn.innerHTML = `<i data-lucide="link"></i> Configurer Connexion MT5`;
+        btn.disabled = false;
+        lucide.createIcons();
+    }
+}
+
+
+
+</script>
+
+</body>
+</html>
